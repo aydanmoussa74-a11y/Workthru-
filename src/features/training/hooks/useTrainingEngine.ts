@@ -6,14 +6,27 @@ import {
   TrainingState,
   TrainingSegment,
   TrainingEvent,
+  TrainingStateSnapshot,
   DerivedTimingInfo,
 } from '../../../domain/training-state/types';
 import { Clock, defaultClock } from '../../../domain/training-state/clock';
+import {
+  TrainingSessionRepository,
+  defaultTrainingSessionRepository,
+} from '../../../data/repositories/training-session.repository';
+import {
+  CompletedWorkoutRepository,
+  defaultCompletedWorkoutRepository,
+} from '../../../data/repositories/completed-workout.repository';
 
 export interface UseTrainingEngineOptions {
   autoStart?: boolean;
   clock?: Clock;
   engineOptions?: TrainingEngineOptions;
+  initialSnapshot?: TrainingStateSnapshot;
+  persistSession?: boolean;
+  sessionRepo?: TrainingSessionRepository;
+  completedRepo?: CompletedWorkoutRepository;
   onComplete?: (session: TrainingSession) => void;
   onAbandon?: (session: TrainingSession) => void;
 }
@@ -50,14 +63,26 @@ export function useTrainingEngine(
   options: UseTrainingEngineOptions = {}
 ): UseTrainingEngineReturn {
   const clock = options.clock || defaultClock;
+  const persistSession = options.persistSession ?? true;
+  const sessionRepo = options.sessionRepo || defaultTrainingSessionRepository;
+  const completedRepo = options.completedRepo || defaultCompletedWorkoutRepository;
 
-  // Stable engine reference initialized once per workout ID
+  // Stable engine reference initialized once per workout ID or from snapshot
   const engineRef = useRef<TrainingEngine | null>(null);
   if (!engineRef.current || engineRef.current.getSession().workoutId !== workout.id) {
-    engineRef.current = new TrainingEngine(workout, {
-      clock,
-      ...options.engineOptions,
-    });
+    if (options.initialSnapshot && options.initialSnapshot.workoutId === workout.id) {
+      engineRef.current = TrainingEngine.fromSnapshot(
+        workout,
+        options.initialSnapshot,
+        clock,
+        options.engineOptions?.builderOptions
+      );
+    } else {
+      engineRef.current = new TrainingEngine(workout, {
+        clock,
+        ...options.engineOptions,
+      });
+    }
   }
 
   const engine = engineRef.current;
@@ -78,7 +103,33 @@ export function useTrainingEngine(
     setTiming(nextTiming);
   }, []);
 
-  // Safe dispatch wrapped with error handling
+  // Safe asynchronous persistence of checkpoints
+  const persistCheckpoint = useCallback(async () => {
+    if (!persistSession || !engineRef.current) return;
+    const currentEngine = engineRef.current;
+    const curState = currentEngine.getState();
+    const snap = currentEngine.getSnapshot();
+
+    try {
+      if (curState === 'COMPLETED') {
+        await completedRepo.saveFromSession(workout, currentEngine.getSession());
+        await sessionRepo.deleteSession(snap.sessionId);
+      } else if (curState === 'ABANDONED') {
+        await sessionRepo.deleteSession(snap.sessionId);
+      } else if (
+        curState === 'PREPARING' ||
+        curState === 'ACTIVE' ||
+        curState === 'PAUSED' ||
+        curState === 'REST'
+      ) {
+        await sessionRepo.saveSnapshot(workout, snap);
+      }
+    } catch (err) {
+      console.warn('Autosave checkpoint failed:', err);
+    }
+  }, [persistSession, workout, sessionRepo, completedRepo]);
+
+  // Safe dispatch wrapped with error handling & checkpoint persistence
   const dispatch = useCallback(
     (event: TrainingEvent) => {
       if (!engineRef.current) return;
@@ -88,6 +139,12 @@ export function useTrainingEngine(
         syncState();
 
         const updatedState = engineRef.current.getState();
+
+        // Checkpoint persistence on explicit events (NOT on tick)
+        if (event.type !== 'TICK') {
+          persistCheckpoint();
+        }
+
         if (updatedState === 'COMPLETED' && options.onComplete) {
           options.onComplete(engineRef.current.getSession());
         } else if (updatedState === 'ABANDONED' && options.onAbandon) {
@@ -98,7 +155,7 @@ export function useTrainingEngine(
         setError(err?.message || 'State transition error occurred.');
       }
     },
-    [syncState, options]
+    [syncState, persistCheckpoint, options]
   );
 
   // Periodic tick subscription: drives UI updates from authoritative timestamp math
@@ -111,6 +168,9 @@ export function useTrainingEngine(
       const currentState = engineRef.current.getState();
 
       if (activeStates.includes(currentState)) {
+        const prevSegmentIndex = engineRef.current.getSession().currentSegmentIndex;
+        const prevState = currentState;
+
         // Engine handles expiration internally on tick
         try {
           engineRef.current.dispatch({ type: 'TICK' });
@@ -118,13 +178,57 @@ export function useTrainingEngine(
           // Ignored
         }
         syncState();
+
+        const nextState = engineRef.current.getState();
+        const nextSegmentIndex = engineRef.current.getSession().currentSegmentIndex;
+
+        // If tick caused an automatic state transition or segment transition, persist checkpoint
+        if (nextState !== prevState || nextSegmentIndex !== prevSegmentIndex) {
+          persistCheckpoint();
+          if (nextState === 'COMPLETED' && options.onComplete) {
+            options.onComplete(engineRef.current.getSession());
+          }
+        }
       }
     }, 100);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [syncState]);
+  }, [syncState, persistCheckpoint, options]);
+
+  // Page lifecycle persistence: checkpoint on tab hide / app backgrounding
+  useEffect(() => {
+    if (!persistSession) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && engineRef.current) {
+        const st = engineRef.current.getState();
+        if (st === 'ACTIVE' || st === 'PREPARING' || st === 'PAUSED' || st === 'REST') {
+          persistCheckpoint();
+        }
+      }
+    };
+
+    const handlePageHide = () => {
+      if (engineRef.current) {
+        const st = engineRef.current.getState();
+        if (st === 'ACTIVE' || st === 'PREPARING' || st === 'PAUSED' || st === 'REST') {
+          persistCheckpoint();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handlePageHide);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handlePageHide);
+    };
+  }, [persistSession, persistCheckpoint]);
 
   // Optional auto-start
   useEffect(() => {

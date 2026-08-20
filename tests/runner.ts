@@ -7,6 +7,7 @@ import { runExerciseDomainTests, runExerciseRepositoryTests } from './exercise-d
 import { runWorkoutDomainTests } from './workout-domain.test';
 import { runTrainingEngineTests } from './training-engine.test';
 import { runTrainingPlayerTests } from './training-player.test';
+import { runLocalPersistenceTests } from './local-persistence.test';
 
 export async function runAllTests(): Promise<{ passed: boolean; report: string[] }> {
   const report: string[] = [];
@@ -63,6 +64,15 @@ export async function runAllTests(): Promise<{ passed: boolean; report: string[]
     report.push('✓ Phase 4 Training Player & Interaction tests passed (preparation, active timer, reps, controls, previous/skip, abandon flow, completion records)');
   } else {
     report.push(`✗ Phase 4 Training Player & Interaction tests failed:\n${playerTestResult.failures.join('\n')}`);
+    allPassed = false;
+  }
+
+  // 7. Local persistence & IndexedDB tests
+  const persistenceTestResult = await runLocalPersistenceTests();
+  if (persistenceTestResult.passed) {
+    report.push('✓ Phase 5 Local Persistence & IndexedDB tests passed (schema v1, session snapshots, interruption recovery, stale threshold, completed history, preferences, wipe)');
+  } else {
+    report.push(`✗ Phase 5 Local Persistence & IndexedDB tests failed:\n${persistenceTestResult.failures.join('\n')}`);
     allPassed = false;
   }
 

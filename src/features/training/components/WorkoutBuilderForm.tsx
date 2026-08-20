@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../../../ui/components/Card';
 import { Button } from '../../../ui/components/Button';
 import { Badge } from '../../../ui/components/Badge';
@@ -11,6 +11,7 @@ import {
   EquipmentRequirement,
 } from '../../../domain/exercises/types';
 import { Sliders, Zap, Clock, ShieldCheck, Dumbbell, Layers, RotateCcw } from '../../../ui/icons';
+import { defaultPreferencesRepository } from '../../../data/repositories';
 
 interface WorkoutBuilderFormProps {
   onGenerate: (req: WorkoutRequest) => void;
@@ -60,6 +61,20 @@ export const WorkoutBuilderForm: React.FC<WorkoutBuilderFormProps> = ({
   const [includeCooldown, setIncludeCooldown] = useState<boolean>(
     initialRequest?.includeCooldown !== undefined ? initialRequest.includeCooldown : true
   );
+
+  // Load saved preferences if no explicit initial request is provided
+  useEffect(() => {
+    if (!initialRequest) {
+      defaultPreferencesRepository.getTrainingPreferences().then((prefs) => {
+        setDurationMin(prefs.defaultDurationMin);
+        setFocus(prefs.trainingFocus);
+        setExperienceLevel(prefs.experienceLevel);
+        setEquipment(prefs.equipment);
+        setIncludeWarmup(prefs.includeWarmup);
+        setIncludeCooldown(prefs.includeCooldown);
+      });
+    }
+  }, [initialRequest]);
 
   const toggleEquipment = (eq: EquipmentRequirement) => {
     if (eq === 'NONE') {

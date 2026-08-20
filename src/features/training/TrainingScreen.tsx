@@ -1,95 +1,145 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
-import { useApp } from '../../app/providers/AppProvider';
 import { Card } from '../../ui/components/Card';
 import { Button } from '../../ui/components/Button';
 import { Badge } from '../../ui/components/Badge';
-import { Flame, Sparkles, Sliders, Zap, CheckCircle2, RotateCcw } from '../../ui/icons';
-import { screenTransition } from '../../ui/motion/transitions';
-import { Workout, WorkoutRequest } from '../../domain/workouts/types';
-import { defaultWorkoutRepository } from '../../domain/workouts/repository';
-import { defaultExerciseRepository } from '../../domain/exercises/repository';
-import { WorkoutPresetCard } from './components/WorkoutPresetCard';
+import {
+  Workout,
+  WorkoutRequest,
+  TrainingFocus,
+} from '../../domain/workouts/types';
+import {
+  defaultWorkoutRepository,
+  defaultExerciseRepository,
+  defaultTrainingSessionRepository,
+  defaultPreferencesRepository,
+} from '../../data/repositories';
 import { WorkoutBuilderForm } from './components/WorkoutBuilderForm';
+import { WorkoutPresetCard } from './components/WorkoutPresetCard';
 import { WorkoutPreview } from './components/WorkoutPreview';
 import { TrainingPlayer } from './components/TrainingPlayer';
+import { SessionRecoveryBanner } from './components/SessionRecoveryBanner';
+import { PersistedTrainingSession } from '../../data/local/types';
+import { screenTransition } from '../../ui/motion/transitions';
+import { TrainingStateSnapshot } from '../../domain/training-state/types';
 
-const PRESET_REQUESTS: {
-  id: string;
-  title: string;
-  subtitle: string;
-  request: WorkoutRequest;
-}[] = [
+const PRESET_WORKOUTS = [
   {
-    id: 'preset-foundation',
-    title: 'Full Body Foundation',
-    subtitle: 'Balanced calisthenics routine targeting push, legs, core, and mobility.',
+    id: 'preset-starter',
+    title: 'Starter Calisthenics',
+    subtitle: 'Core bodyweight movements to build solid joint stability.',
     request: {
-      durationMin: 15,
-      trainingFocus: 'FULL_BODY',
-      experienceLevel: 'BEGINNER',
-      equipment: ['NONE'],
+      durationMin: 12,
+      trainingFocus: 'FULL_BODY' as TrainingFocus,
+      experienceLevel: 'BEGINNER' as const,
+      equipment: ['NONE' as const],
       includeWarmup: true,
       includeCooldown: true,
     },
   },
   {
-    id: 'preset-core-stability',
-    title: 'Pillar Core & Stability',
-    subtitle: 'Anti-extension and anti-rotation stability movements.',
+    id: 'preset-core-focus',
+    title: 'Core Stability & Hollow Body',
+    subtitle: 'Focused midline tension and isometric endurance.',
     request: {
       durationMin: 10,
-      trainingFocus: 'CORE',
-      experienceLevel: 'BEGINNER',
-      equipment: ['NONE'],
+      trainingFocus: 'CORE' as TrainingFocus,
+      experienceLevel: 'BEGINNER' as const,
+      equipment: ['NONE' as const],
       includeWarmup: true,
       includeCooldown: false,
     },
   },
   {
     id: 'preset-push-power',
-    title: 'Upper Body Push',
-    subtitle: 'Progressive chest, tricep, and shoulder pressing patterns.',
+    title: 'Upper Body Push & Mobility',
+    subtitle: 'Chest, shoulder, and tricep volume with wrist preparation.',
     request: {
-      durationMin: 12,
-      trainingFocus: 'PUSH',
-      experienceLevel: 'BEGINNER',
-      equipment: ['NONE'],
+      durationMin: 15,
+      trainingFocus: 'PUSH' as TrainingFocus,
+      experienceLevel: 'INTERMEDIATE' as const,
+      equipment: ['NONE' as const],
       includeWarmup: true,
       includeCooldown: true,
-    },
-  },
-  {
-    id: 'preset-joint-mobility',
-    title: 'Joint Mobility & Flow',
-    subtitle: 'Spine, shoulder, and hip restorative mobility routine.',
-    request: {
-      durationMin: 8,
-      trainingFocus: 'MOBILITY',
-      experienceLevel: 'BEGINNER',
-      equipment: ['NONE'],
-      includeWarmup: false,
-      includeCooldown: false,
     },
   },
 ];
 
 export const TrainingScreen: React.FC = () => {
-  const { navigateTo, setIsTrainingActive } = useApp();
-  const [activeTab, setActiveTab] = useState<'presets' | 'custom'>('presets');
+  // Generation & Active Workout States
   const [generatedWorkout, setGeneratedWorkout] = useState<Workout | null>(null);
   const [activeWorkoutForPlayer, setActiveWorkoutForPlayer] = useState<Workout | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [activeInitialSnapshot, setActiveInitialSnapshot] = useState<TrainingStateSnapshot | undefined>(undefined);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleGenerate = async (request: WorkoutRequest) => {
+  // Recovery State
+  const [interruptedSession, setInterruptedSession] = useState<{
+    session: PersistedTrainingSession | null;
+    isStale: boolean;
+    ageMs: number;
+  }>({ session: null, isStale: false, ageMs: 0 });
+
+  // Load recovery status
+  const checkRecovery = useCallback(async () => {
+    try {
+      const result = await defaultTrainingSessionRepository.checkInterruptedSession();
+      if (result.hasIncompleteSession && result.session) {
+        setInterruptedSession({
+          session: result.session,
+          isStale: result.isStale,
+          ageMs: result.ageMs,
+        });
+
+        // Check if there was a pending resume request from another screen
+        const pendingResumeId = sessionStorage.getItem('resume_session_id');
+        if (pendingResumeId && pendingResumeId === result.session.sessionId) {
+          sessionStorage.removeItem('resume_session_id');
+          handleResumeSession(result.session);
+        }
+      } else {
+        setInterruptedSession({ session: null, isStale: false, ageMs: 0 });
+      }
+    } catch (err) {
+      console.warn('Failed to check recovery in TrainingScreen:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkRecovery();
+  }, [checkRecovery]);
+
+  const handleGenerateCustom = async (request: WorkoutRequest) => {
+    setIsGenerating(true);
+    setErrorMsg(null);
+    try {
+      // Persist preferences
+      await defaultPreferencesRepository.saveTrainingPreferences({
+        experienceLevel: request.experienceLevel,
+        equipment: request.equipment,
+        defaultDurationMin: request.durationMin,
+        trainingFocus: request.trainingFocus,
+        includeWarmup: request.includeWarmup,
+        includeCooldown: request.includeCooldown,
+      });
+
+      const workout = await defaultWorkoutRepository.generateWorkout(request);
+      setGeneratedWorkout(workout);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to generate workout.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSelectPreset = async (request: WorkoutRequest) => {
     setIsGenerating(true);
     setErrorMsg(null);
     try {
       const workout = await defaultWorkoutRepository.generateWorkout(request);
       setGeneratedWorkout(workout);
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to generate workout plan.');
+      setErrorMsg(err.message || 'Failed to load preset workout.');
     } finally {
       setIsGenerating(false);
     }
@@ -97,16 +147,28 @@ export const TrainingScreen: React.FC = () => {
 
   const handleReconfigure = () => {
     setGeneratedWorkout(null);
+    setErrorMsg(null);
   };
 
   const handleStartWorkout = (workout: Workout) => {
     setActiveWorkoutForPlayer(workout);
-    setIsTrainingActive(true);
+    setActiveInitialSnapshot(undefined);
+  };
+
+  const handleResumeSession = (persisted: PersistedTrainingSession) => {
+    setActiveWorkoutForPlayer(persisted.workout);
+    setActiveInitialSnapshot(persisted.snapshot);
+  };
+
+  const handleDiscardSession = async (sessionId: string) => {
+    await defaultTrainingSessionRepository.deleteSession(sessionId);
+    await checkRecovery();
   };
 
   const handleExitPlayer = () => {
     setActiveWorkoutForPlayer(null);
-    setIsTrainingActive(false);
+    setActiveInitialSnapshot(undefined);
+    checkRecovery();
   };
 
   // If Training Player is active, render player directly
@@ -114,8 +176,10 @@ export const TrainingScreen: React.FC = () => {
     return (
       <TrainingPlayer
         workout={activeWorkoutForPlayer}
+        initialSnapshot={activeInitialSnapshot}
         exerciseRepo={defaultExerciseRepository}
         onExit={handleExitPlayer}
+        onSessionComplete={handleExitPlayer}
       />
     );
   }
@@ -130,16 +194,27 @@ export const TrainingScreen: React.FC = () => {
       <section id="training-header" className="space-y-1">
         <div className="flex items-center gap-2">
           <Badge variant="outline" id="training-phase-tag">
-            Phase 4 • Training Player
+            Phase 5 • Local Persistence
           </Badge>
         </div>
         <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
           Training Hub
         </h2>
         <p className="text-sm text-neutral-400">
-          Follow-along calisthenics sessions with real-time timestamp countdowns, guidance, and cues.
+          Follow-along calisthenics sessions with real-time timestamp countdowns, guidance, and persistent local autosave.
         </p>
       </section>
+
+      {/* Interrupted Session Recovery Banner */}
+      {interruptedSession.session && (
+        <SessionRecoveryBanner
+          session={interruptedSession.session}
+          isStale={interruptedSession.isStale}
+          ageMs={interruptedSession.ageMs}
+          onResume={handleResumeSession}
+          onDiscard={handleDiscardSession}
+        />
+      )}
 
       {errorMsg && (
         <Card id="training-error-card" padding="sm" className="bg-red-950/40 border-red-800 text-red-200 text-xs">
@@ -158,96 +233,32 @@ export const TrainingScreen: React.FC = () => {
         />
       ) : (
         <div className="space-y-4">
-          {/* Mode Switcher: Presets vs Custom Builder */}
-          <div className="grid grid-cols-2 p-1 rounded-xl bg-neutral-900 border border-neutral-800" role="tablist">
-            <button
-              type="button"
-              id="tab-presets-btn"
-              role="tab"
-              aria-selected={activeTab === 'presets'}
-              onClick={() => setActiveTab('presets')}
-              className={`min-h-[44px] py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
-                activeTab === 'presets'
-                  ? 'bg-neutral-800 text-neutral-100 shadow-sm'
-                  : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Curated Presets
-            </button>
-            <button
-              type="button"
-              id="tab-custom-btn"
-              role="tab"
-              aria-selected={activeTab === 'custom'}
-              onClick={() => setActiveTab('custom')}
-              className={`min-h-[44px] py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
-                activeTab === 'custom'
-                  ? 'bg-neutral-800 text-neutral-100 shadow-sm'
-                  : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              Custom Generator
-            </button>
-          </div>
+          <section id="builder-section">
+            <WorkoutBuilderForm
+              onGenerate={handleGenerateCustom}
+              isGenerating={isGenerating}
+            />
+          </section>
 
-          {activeTab === 'presets' ? (
-            <div id="presets-container" className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <h3 className="text-xs font-mono uppercase tracking-wider text-neutral-400">
-                  Select a Curated Plan
-                </h3>
-                <span className="text-xs text-neutral-400">Instant Generation</span>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2.5">
-                {PRESET_REQUESTS.map((preset) => (
-                  <WorkoutPresetCard
-                    key={preset.id}
-                    id={preset.id}
-                    title={preset.title}
-                    subtitle={preset.subtitle}
-                    request={preset.request}
-                    onSelect={handleGenerate}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div id="custom-builder-container">
-              <WorkoutBuilderForm
-                onGenerate={handleGenerate}
-                isGenerating={isGenerating}
-              />
-            </div>
-          )}
-
-          {/* Training Readiness Guide */}
-          <section id="training-readiness-section" className="space-y-2 pt-2">
+          <section id="presets-section" className="space-y-2">
             <h3 className="text-xs font-mono uppercase tracking-wider text-neutral-400">
-              Training Session Readiness
+              Curated Preset Routines
             </h3>
-            <Card id="readiness-card" padding="sm" className="bg-neutral-900/40 border-neutral-850">
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span className="text-xs text-neutral-300">Clear a 2x2 meter flat space</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span className="text-xs text-neutral-300">Have drinking water available</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span className="text-xs text-neutral-300">Warm up joints before intense sets</span>
-                </div>
-              </div>
-            </Card>
+            <div className="grid grid-cols-1 gap-2">
+              {PRESET_WORKOUTS.map((preset) => (
+                <WorkoutPresetCard
+                  key={preset.id}
+                  id={preset.id}
+                  title={preset.title}
+                  subtitle={preset.subtitle}
+                  request={preset.request}
+                  onSelect={handleSelectPreset}
+                />
+              ))}
+            </div>
           </section>
         </div>
       )}
     </motion.div>
   );
 };
-

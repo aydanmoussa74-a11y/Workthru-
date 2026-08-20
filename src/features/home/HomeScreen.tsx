@@ -1,14 +1,69 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { useApp } from '../../app/providers/AppProvider';
 import { Card } from '../../ui/components/Card';
 import { Button } from '../../ui/components/Button';
 import { Badge } from '../../ui/components/Badge';
-import { Play, Clock, Dumbbell, ShieldCheck, Sparkles, ArrowRight } from '../../ui/icons';
+import {
+  Play,
+  Clock,
+  Dumbbell,
+  ShieldCheck,
+  Sparkles,
+  RotateCcw,
+  CheckCircle2,
+} from '../../ui/icons';
 import { screenTransition } from '../../ui/motion/transitions';
+import {
+  defaultTrainingSessionRepository,
+  defaultCompletedWorkoutRepository,
+} from '../../data/repositories';
+import { PersistedTrainingSession } from '../../data/local/types';
+import { SessionRecoveryBanner } from '../training/components/SessionRecoveryBanner';
 
 export const HomeScreen: React.FC = () => {
   const { navigateTo } = useApp();
+  const [interruptedSession, setInterruptedSession] = useState<{
+    session: PersistedTrainingSession | null;
+    isStale: boolean;
+    ageMs: number;
+  }>({ session: null, isStale: false, ageMs: 0 });
+  const [completedCount, setCompletedCount] = useState<number>(0);
+
+  const checkStatus = useCallback(async () => {
+    try {
+      const [recovery, count] = await Promise.all([
+        defaultTrainingSessionRepository.checkInterruptedSession(),
+        defaultCompletedWorkoutRepository.getCount(),
+      ]);
+      if (recovery.hasIncompleteSession && recovery.session) {
+        setInterruptedSession({
+          session: recovery.session,
+          isStale: recovery.isStale,
+          ageMs: recovery.ageMs,
+        });
+      } else {
+        setInterruptedSession({ session: null, isStale: false, ageMs: 0 });
+      }
+      setCompletedCount(count);
+    } catch (err) {
+      console.warn('Failed to load status in HomeScreen:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkStatus();
+  }, [checkStatus]);
+
+  const handleResumeSession = (session: PersistedTrainingSession) => {
+    sessionStorage.setItem('resume_session_id', session.sessionId);
+    navigateTo('train');
+  };
+
+  const handleDiscardSession = async (sessionId: string) => {
+    await defaultTrainingSessionRepository.deleteSession(sessionId);
+    await checkStatus();
+  };
 
   return (
     <motion.div
@@ -28,6 +83,17 @@ export const HomeScreen: React.FC = () => {
           Open → Follow → Train → Progress.
         </p>
       </section>
+
+      {/* Interrupted Session Recovery if detected */}
+      {interruptedSession.session && (
+        <SessionRecoveryBanner
+          session={interruptedSession.session}
+          isStale={interruptedSession.isStale}
+          ageMs={interruptedSession.ageMs}
+          onResume={handleResumeSession}
+          onDiscard={handleDiscardSession}
+        />
+      )}
 
       {/* Featured Workout Card */}
       <section id="todays-workout-section">
@@ -95,10 +161,24 @@ export const HomeScreen: React.FC = () => {
         <Card id="active-session-summary" padding="sm" className="bg-neutral-900/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/10" />
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  interruptedSession.session
+                    ? 'bg-amber-400 ring-4 ring-amber-400/20'
+                    : 'bg-emerald-500 ring-4 ring-emerald-500/10'
+                }`}
+              />
               <div>
-                <p className="text-xs font-medium text-neutral-200">System Ready</p>
-                <p className="text-[11px] text-neutral-400">No active session in progress</p>
+                <p className="text-xs font-medium text-neutral-200">
+                  {interruptedSession.session
+                    ? 'In-Flight Session Interrupted'
+                    : 'System Ready'}
+                </p>
+                <p className="text-[11px] text-neutral-400">
+                  {interruptedSession.session
+                    ? `${interruptedSession.session.workout.title} (in progress)`
+                    : `${completedCount} completed sessions in local storage`}
+                </p>
               </div>
             </div>
             <span className="text-[11px] font-mono text-neutral-400">Local-First</span>

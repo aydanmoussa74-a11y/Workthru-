@@ -19,6 +19,8 @@ export {
   CheckCircle2,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   ShieldCheck,
   Smartphone,
   Sparkles,
@@ -45,4 +47,6 @@ export {
   Flag,
   HelpCircle,
   Lightbulb,
+  Trash2,
+  HardDrive,
 } from 'lucide-react';

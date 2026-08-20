@@ -13,9 +13,11 @@ import { RestView } from './RestView';
 import { WorkoutComplete } from './WorkoutComplete';
 import { AbandonConfirmModal } from './AbandonConfirmModal';
 import { X, AlertCircle } from '../../../ui/icons';
+import { TrainingStateSnapshot } from '../../../domain/training-state/types';
 
 export interface TrainingPlayerProps {
   workout: Workout;
+  initialSnapshot?: TrainingStateSnapshot;
   exerciseRepo?: ExerciseRepository;
   clock?: Clock;
   autoStart?: boolean;
@@ -25,6 +27,7 @@ export interface TrainingPlayerProps {
 
 export const TrainingPlayer: React.FC<TrainingPlayerProps> = ({
   workout,
+  initialSnapshot,
   exerciseRepo = defaultExerciseRepository,
   clock = defaultClock,
   autoStart = true,
@@ -34,7 +37,7 @@ export const TrainingPlayer: React.FC<TrainingPlayerProps> = ({
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const [allExercisesMap, setAllExercisesMap] = useState<Map<string, any>>(new Map());
 
-  // Authoritative Training Engine Hook
+  // Authoritative Training Engine Hook with Snapshot Restoration support
   const {
     session,
     state,
@@ -59,7 +62,8 @@ export const TrainingPlayer: React.FC<TrainingPlayerProps> = ({
     error,
     clearError,
   } = useTrainingEngine(workout, {
-    autoStart,
+    autoStart: initialSnapshot ? false : autoStart,
+    initialSnapshot,
     clock,
     onComplete: () => {
       if (onSessionComplete) onSessionComplete();
