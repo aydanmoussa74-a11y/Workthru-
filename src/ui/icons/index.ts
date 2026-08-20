@@ -30,4 +30,8 @@ export {
   ArrowDownRight,
   Check,
   Activity,
+  ListOrdered,
+  Zap,
+  Sliders,
+  Eye,
 } from 'lucide-react';

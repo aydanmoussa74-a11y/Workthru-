@@ -10,11 +10,8 @@ import { WorkoutSession } from '../../domain/training-state/types';
 export type { ExerciseRepository } from '../../domain/exercises/repository';
 export { defaultExerciseRepository, LocalStaticExerciseRepository } from '../../domain/exercises/repository';
 
-export interface WorkoutRepository {
-  getAll(): Promise<Workout[]>;
-  getById(id: string): Promise<Workout | null>;
-  getDefaultDailyWorkout(): Promise<Workout>;
-}
+export type { WorkoutRepository } from '../../domain/workouts/repository';
+export { defaultWorkoutRepository, LocalStaticWorkoutRepository } from '../../domain/workouts/repository';
 
 export interface SessionRepository {
   getActiveSession(): Promise<WorkoutSession | null>;
