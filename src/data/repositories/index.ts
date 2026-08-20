@@ -7,11 +7,8 @@ import { Exercise } from '../../domain/exercises/types';
 import { Workout } from '../../domain/workouts/types';
 import { WorkoutSession } from '../../domain/training-state/types';
 
-export interface ExerciseRepository {
-  getAll(): Promise<Exercise[]>;
-  getById(id: string): Promise<Exercise | null>;
-  getByMuscleGroup(group: string): Promise<Exercise[]>;
-}
+export type { ExerciseRepository } from '../../domain/exercises/repository';
+export { defaultExerciseRepository, LocalStaticExerciseRepository } from '../../domain/exercises/repository';
 
 export interface WorkoutRepository {
   getAll(): Promise<Workout[]>;

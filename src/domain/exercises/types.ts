@@ -1,52 +1,100 @@
 /**
  * Exercise Domain Types
- * Source of truth for exercise definitions and variations.
+ * Canonical domain definitions for exercises, classifications, equipment, and technique instructions.
  */
+
+export type ExerciseCategory =
+  | 'PUSH'
+  | 'PULL'
+  | 'LEGS'
+  | 'CORE'
+  | 'FULL_BODY'
+  | 'MOBILITY'
+  | 'WARM_UP'
+  | 'COOL_DOWN'
+  | 'CARDIO';
+
+export type MovementPattern =
+  | 'HORIZONTAL_PUSH'
+  | 'VERTICAL_PUSH'
+  | 'HORIZONTAL_PULL'
+  | 'VERTICAL_PULL'
+  | 'SQUAT'
+  | 'LUNGE'
+  | 'HIP_HINGE'
+  | 'BRIDGE'
+  | 'ANTI_EXTENSION'
+  | 'ANTI_ROTATION'
+  | 'ROTATION'
+  | 'LOCOMOTION'
+  | 'MOBILITY';
+
+export type EquipmentRequirement =
+  | 'NONE'
+  | 'WALL'
+  | 'CHAIR'
+  | 'TABLE'
+  | 'RESISTANCE_BAND'
+  | 'DUMBBELL'
+  | 'PULL_UP_BAR'
+  | 'OTHER';
+
+export type ExperienceLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 
 export type MuscleGroup =
   | 'chest'
   | 'back'
-  | 'legs'
   | 'shoulders'
-  | 'arms'
+  | 'biceps'
+  | 'triceps'
+  | 'quadriceps'
+  | 'hamstrings'
+  | 'glutes'
+  | 'calves'
+  | 'feet'
   | 'core'
+  | 'obliques'
+  | 'hip_flexors'
+  | 'neck'
   | 'full_body';
 
-export type MovementPattern =
-  | 'push'
-  | 'pull'
-  | 'squat'
-  | 'hinge'
-  | 'lunge'
-  | 'carry'
-  | 'plank'
-  | 'mobility';
+export interface ExerciseInstructions {
+  setup: string[];
+  execution: string[];
+  breathing: string;
+  formCues: string[];
+  commonMistakes: string[];
+  safetyNotes: string;
+}
 
-export type EquipmentRequirement =
-  | 'none'
-  | 'mat'
-  | 'chair_or_bench'
-  | 'wall'
-  | 'resistance_band'
-  | 'dumbbells';
-
-export interface ExerciseVariation {
-  id: string;
-  name: string;
-  difficultyLevel: 1 | 2 | 3 | 4 | 5;
-  techniqueCues: string[];
+export interface ExerciseMediaReference {
+  videoUrl?: string | null;
+  animationUrl?: string | null;
+  thumbnailUrl?: string | null;
 }
 
 export interface Exercise {
   id: string;
+  slug: string;
   name: string;
-  primaryMuscle: MuscleGroup;
-  secondaryMuscles: MuscleGroup[];
-  movementPattern: MovementPattern;
-  equipment: EquipmentRequirement;
-  difficulty: 1 | 2 | 3 | 4 | 5;
   description: string;
-  variations?: ExerciseVariation[];
-  defaultDurationSec?: number;
-  defaultReps?: number;
+  category: ExerciseCategory;
+  movementPattern: MovementPattern;
+  primaryMuscles: MuscleGroup[];
+  secondaryMuscles: MuscleGroup[];
+  equipment: EquipmentRequirement;
+  experienceLevel: ExperienceLevel;
+  instructions: ExerciseInstructions;
+  regressionId?: string | null;
+  progressionId?: string | null;
+  media?: ExerciseMediaReference | null;
+}
+
+export interface ExerciseFilterCriteria {
+  searchQuery?: string;
+  category?: ExerciseCategory | 'ALL';
+  equipment?: EquipmentRequirement | 'ALL';
+  experienceLevel?: ExperienceLevel | 'ALL';
+  movementPattern?: MovementPattern | 'ALL';
+  muscle?: MuscleGroup | 'ALL';
 }
