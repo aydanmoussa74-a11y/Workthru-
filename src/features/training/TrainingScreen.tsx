@@ -12,6 +12,7 @@ import { defaultExerciseRepository } from '../../domain/exercises/repository';
 import { WorkoutPresetCard } from './components/WorkoutPresetCard';
 import { WorkoutBuilderForm } from './components/WorkoutBuilderForm';
 import { WorkoutPreview } from './components/WorkoutPreview';
+import { TrainingPlayer } from './components/TrainingPlayer';
 
 const PRESET_REQUESTS: {
   id: string;
@@ -74,9 +75,10 @@ const PRESET_REQUESTS: {
 ];
 
 export const TrainingScreen: React.FC = () => {
-  const { navigateTo } = useApp();
+  const { navigateTo, setIsTrainingActive } = useApp();
   const [activeTab, setActiveTab] = useState<'presets' | 'custom'>('presets');
   const [generatedWorkout, setGeneratedWorkout] = useState<Workout | null>(null);
+  const [activeWorkoutForPlayer, setActiveWorkoutForPlayer] = useState<Workout | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -97,6 +99,27 @@ export const TrainingScreen: React.FC = () => {
     setGeneratedWorkout(null);
   };
 
+  const handleStartWorkout = (workout: Workout) => {
+    setActiveWorkoutForPlayer(workout);
+    setIsTrainingActive(true);
+  };
+
+  const handleExitPlayer = () => {
+    setActiveWorkoutForPlayer(null);
+    setIsTrainingActive(false);
+  };
+
+  // If Training Player is active, render player directly
+  if (activeWorkoutForPlayer) {
+    return (
+      <TrainingPlayer
+        workout={activeWorkoutForPlayer}
+        exerciseRepo={defaultExerciseRepository}
+        onExit={handleExitPlayer}
+      />
+    );
+  }
+
   return (
     <motion.div
       id="training-screen"
@@ -107,14 +130,14 @@ export const TrainingScreen: React.FC = () => {
       <section id="training-header" className="space-y-1">
         <div className="flex items-center gap-2">
           <Badge variant="outline" id="training-phase-tag">
-            Phase 2 • Workout Domain
+            Phase 4 • Training Player
           </Badge>
         </div>
         <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
           Training Hub
         </h2>
         <p className="text-sm text-neutral-400">
-          Deterministic workout generation tailored to your time, equipment, and focus.
+          Follow-along calisthenics sessions with real-time timestamp countdowns, guidance, and cues.
         </p>
       </section>
 
@@ -131,6 +154,7 @@ export const TrainingScreen: React.FC = () => {
           workout={generatedWorkout}
           exerciseRepo={defaultExerciseRepository}
           onReconfigure={handleReconfigure}
+          onStartWorkout={handleStartWorkout}
         />
       ) : (
         <div className="space-y-4">
@@ -226,3 +250,4 @@ export const TrainingScreen: React.FC = () => {
     </motion.div>
   );
 };
+

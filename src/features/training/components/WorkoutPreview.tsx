@@ -23,20 +23,21 @@ import {
   Sliders,
 } from '../../../ui/icons';
 
-interface WorkoutPreviewProps {
+export interface WorkoutPreviewProps {
   workout: Workout;
   exerciseRepo: ExerciseRepository;
   onReconfigure: () => void;
+  onStartWorkout?: (workout: Workout) => void;
 }
 
 export const WorkoutPreview: React.FC<WorkoutPreviewProps> = ({
   workout,
   exerciseRepo,
   onReconfigure,
+  onStartWorkout,
 }) => {
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showPlayerNotice, setShowPlayerNotice] = useState(false);
   const [showEngineDetails, setShowEngineDetails] = useState(false);
 
   const runtimeSegments = React.useMemo(() => {
@@ -273,27 +274,15 @@ export const WorkoutPreview: React.FC<WorkoutPreviewProps> = ({
           variant="primary"
           size="lg"
           fullWidth
-          onClick={() => setShowPlayerNotice(!showPlayerNotice)}
+          onClick={() => {
+            if (onStartWorkout) {
+              onStartWorkout(workout);
+            }
+          }}
         >
           <Play className="w-4 h-4 fill-current mr-1.5" />
           Start Follow-Along Workout
         </Button>
-
-        {showPlayerNotice && (
-          <Card id="player-scheduled-notice" padding="sm" className="bg-neutral-900 border-neutral-750">
-            <div className="flex items-start gap-2.5">
-              <Flame className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="text-xs font-semibold text-neutral-200">
-                  Player Engine Scheduled for Phase 4
-                </p>
-                <p className="text-[11px] text-neutral-400 leading-relaxed">
-                  The interactive Training Player with timestamp-based countdown timers, audio cues, pause/resume, and session persistence will be connected in Phase 4.
-                </p>
-              </div>
-            </div>
-          </Card>
-        )}
 
         <Button
           id="preview-reconfigure-btn"

@@ -6,6 +6,7 @@ import { runFoundationChecks } from './foundation.test';
 import { runExerciseDomainTests, runExerciseRepositoryTests } from './exercise-domain.test';
 import { runWorkoutDomainTests } from './workout-domain.test';
 import { runTrainingEngineTests } from './training-engine.test';
+import { runTrainingPlayerTests } from './training-player.test';
 
 export async function runAllTests(): Promise<{ passed: boolean; report: string[] }> {
   const report: string[] = [];
@@ -53,6 +54,15 @@ export async function runAllTests(): Promise<{ passed: boolean; report: string[]
     report.push('✓ Phase 3 Training State Machine & Timing Engine tests passed (state machine, timestamp clock, pause/resume drift prevention, time adjustments, snapshots, errors)');
   } else {
     report.push(`✗ Phase 3 Training State Machine & Timing Engine tests failed:\n${engineTestResult.failures.join('\n')}`);
+    allPassed = false;
+  }
+
+  // 6. Training player & hook tests
+  const playerTestResult = await runTrainingPlayerTests();
+  if (playerTestResult.passed) {
+    report.push('✓ Phase 4 Training Player & Interaction tests passed (preparation, active timer, reps, controls, previous/skip, abandon flow, completion records)');
+  } else {
+    report.push(`✗ Phase 4 Training Player & Interaction tests failed:\n${playerTestResult.failures.join('\n')}`);
     allPassed = false;
   }
 

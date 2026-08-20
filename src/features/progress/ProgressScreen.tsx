@@ -1,14 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useApp } from '../../app/providers/AppProvider';
 import { Card } from '../../ui/components/Card';
 import { Button } from '../../ui/components/Button';
 import { EmptyState } from '../../ui/components/EmptyState';
-import { TrendingUp, Layers, Play } from '../../ui/icons';
+import { TrendingUp, Layers, Play, CheckCircle2, ShieldCheck, Activity } from '../../ui/icons';
 import { screenTransition } from '../../ui/motion/transitions';
+import { runAllTests } from '../../../tests/runner';
 
 export const ProgressScreen: React.FC = () => {
   const { navigateTo } = useApp();
+  const [testResults, setTestResults] = useState<{ passed: boolean; report: string[] } | null>(null);
+  const [isRunningTests, setIsRunningTests] = useState(false);
+
+  const handleRunDiagnostics = async () => {
+    setIsRunningTests(true);
+    try {
+      const results = await runAllTests();
+      setTestResults(results);
+    } finally {
+      setIsRunningTests(false);
+    }
+  };
 
   return (
     <motion.div
@@ -46,6 +59,50 @@ export const ProgressScreen: React.FC = () => {
           </Button>
         }
       />
+
+      {/* Diagnostics & Verification Panel */}
+      <section id="system-diagnostics-section" className="space-y-2">
+        <h3 className="text-xs font-mono uppercase tracking-wider text-neutral-400">
+          System Verification & Integrity
+        </h3>
+        <Card padding="sm" className="bg-neutral-900/60 border-neutral-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <div>
+                <p className="text-xs font-semibold text-neutral-200">Phase 0–4 Automated Tests</p>
+                <p className="text-[10px] text-neutral-400 font-mono">Exercises, Generator, State Engine & Player</p>
+              </div>
+            </div>
+            <Button
+              id="btn-run-all-tests"
+              variant="secondary"
+              size="sm"
+              onClick={handleRunDiagnostics}
+              disabled={isRunningTests}
+              className="text-xs font-mono"
+            >
+              {isRunningTests ? 'Testing...' : 'Run Tests'}
+            </Button>
+          </div>
+
+          {testResults && (
+            <div className="pt-2 border-t border-neutral-800 space-y-1.5 font-mono text-xs">
+              <div className={`p-2 rounded font-bold text-xs flex items-center gap-2 ${testResults.passed ? 'bg-emerald-950/50 text-emerald-300 border border-emerald-800/60' : 'bg-red-950/50 text-red-300 border border-red-800/60'}`}>
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{testResults.passed ? 'All Phase 0-4 Tests Passing' : 'Test Failures Detected'}</span>
+              </div>
+              <div className="space-y-1 pl-1 text-[11px] text-neutral-300">
+                {testResults.report.map((line, idx) => (
+                  <p key={idx} className={line.startsWith('✓') ? 'text-emerald-400' : 'text-red-400'}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      </section>
 
       {/* Progression Pillars Info */}
       <section id="progression-pillars" className="space-y-2">
@@ -85,3 +142,4 @@ export const ProgressScreen: React.FC = () => {
     </motion.div>
   );
 };
+
