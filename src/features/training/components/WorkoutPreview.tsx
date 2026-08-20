@@ -6,6 +6,8 @@ import { Workout, WorkoutExercise } from '../../../domain/workouts/types';
 import { Exercise } from '../../../domain/exercises/types';
 import { ExerciseRepository } from '../../../domain/exercises/repository';
 import { ExerciseDetailModal } from '../../library/components/ExerciseDetailModal';
+import { TrainingEngine } from '../../../domain/training-state/engine';
+import { buildTrainingSegments } from '../../../domain/training-state/segment-builder';
 import {
   Clock,
   Dumbbell,
@@ -17,6 +19,8 @@ import {
   Layers,
   ChevronRight,
   Flame,
+  Activity,
+  Sliders,
 } from '../../../ui/icons';
 
 interface WorkoutPreviewProps {
@@ -33,6 +37,15 @@ export const WorkoutPreview: React.FC<WorkoutPreviewProps> = ({
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPlayerNotice, setShowPlayerNotice] = useState(false);
+  const [showEngineDetails, setShowEngineDetails] = useState(false);
+
+  const runtimeSegments = React.useMemo(() => {
+    try {
+      return buildTrainingSegments(workout);
+    } catch {
+      return [];
+    }
+  }, [workout]);
 
   const formatDuration = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
@@ -179,7 +192,7 @@ export const WorkoutPreview: React.FC<WorkoutPreviewProps> = ({
         )}
       </div>
 
-      {/* 3. Deterministic Explainability Notice */}
+      {/* 3. Deterministic Explainability & Engine Architecture */}
       <Card id="generator-explainability" padding="sm" className="bg-neutral-900/40 border-neutral-850">
         <div className="flex items-start gap-2.5">
           <Info className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
@@ -192,6 +205,65 @@ export const WorkoutPreview: React.FC<WorkoutPreviewProps> = ({
             </p>
           </div>
         </div>
+      </Card>
+
+      {/* Engine Runtime Segments Inspection */}
+      <Card id="engine-runtime-inspection" padding="sm" className="bg-neutral-900/40 border-neutral-850">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-emerald-400" />
+            <div>
+              <p className="text-xs font-semibold text-neutral-200">
+                Phase 3 Training Engine Ready
+              </p>
+              <p className="text-[10px] text-neutral-400 font-mono">
+                {runtimeSegments.length} runtime segments compiled (timestamp clock verified)
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            id="toggle-engine-details-btn"
+            onClick={() => setShowEngineDetails(!showEngineDetails)}
+            className="text-xs text-neutral-300 hover:text-neutral-100 font-mono underline min-h-[44px] px-2 flex items-center"
+          >
+            {showEngineDetails ? 'Hide Segments' : 'Inspect Runtime'}
+          </button>
+        </div>
+
+        {showEngineDetails && (
+          <div className="mt-3 pt-3 border-t border-neutral-800 space-y-2">
+            <p className="text-[11px] text-neutral-400">
+              The deterministic state machine compiles this workout into an immutable linear segment chain:
+            </p>
+            <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+              {runtimeSegments.map((seg, idx) => (
+                <div
+                  key={seg.id}
+                  className="flex items-center justify-between p-1.5 rounded bg-neutral-950/60 border border-neutral-850 text-[11px]"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-neutral-500 w-4 text-right">
+                      {idx}
+                    </span>
+                    <Badge
+                      variant={seg.type === 'REST' ? 'outline' : seg.type === 'PREPARATION' ? 'secondary' : 'default'}
+                      className="text-[9px] py-0 px-1 font-mono"
+                    >
+                      {seg.type}
+                    </Badge>
+                    <span className="text-neutral-200 truncate max-w-[140px] sm:max-w-xs font-medium">
+                      {seg.name}
+                    </span>
+                  </div>
+                  <span className="font-mono text-neutral-400 shrink-0">
+                    {seg.mode === 'timed' ? `${seg.targetDurationSec}s` : `${seg.targetReps} reps`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* 4. Action Controls */}

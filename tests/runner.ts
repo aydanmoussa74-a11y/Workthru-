@@ -5,6 +5,7 @@
 import { runFoundationChecks } from './foundation.test';
 import { runExerciseDomainTests, runExerciseRepositoryTests } from './exercise-domain.test';
 import { runWorkoutDomainTests } from './workout-domain.test';
+import { runTrainingEngineTests } from './training-engine.test';
 
 export async function runAllTests(): Promise<{ passed: boolean; report: string[] }> {
   const report: string[] = [];
@@ -43,6 +44,15 @@ export async function runAllTests(): Promise<{ passed: boolean; report: string[]
     report.push('✓ Phase 2 Workout Domain & Generation tests passed (determinism, duration bounds, equipment constraints, validator, error handling)');
   } else {
     report.push(`✗ Phase 2 Workout Domain & Generation tests failed:\n${workoutTestResult.failures.join('\n')}`);
+    allPassed = false;
+  }
+
+  // 5. Training state machine & timing engine tests
+  const engineTestResult = await runTrainingEngineTests();
+  if (engineTestResult.passed) {
+    report.push('✓ Phase 3 Training State Machine & Timing Engine tests passed (state machine, timestamp clock, pause/resume drift prevention, time adjustments, snapshots, errors)');
+  } else {
+    report.push(`✗ Phase 3 Training State Machine & Timing Engine tests failed:\n${engineTestResult.failures.join('\n')}`);
     allPassed = false;
   }
 
