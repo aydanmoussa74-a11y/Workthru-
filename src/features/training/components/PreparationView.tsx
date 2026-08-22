@@ -21,12 +21,16 @@ export const PreparationView: React.FC<PreparationViewProps> = ({
   state,
   nextExerciseDetails,
 }) => {
+  // During preparation, resolve demonstration for upcoming first exercise to give visual setup context
+  const prepTargetSegment = nextSegment || currentSegment;
+
   return (
     <div id="preparation-view-stage" className="space-y-4">
       {/* 1. Dedicated Prep Demonstration/Visual Frame */}
       <ExerciseDemonstration
-        segment={currentSegment}
-        exerciseDetails={null}
+        segment={prepTargetSegment}
+        exerciseDetails={nextExerciseDetails}
+        isWorkoutPaused={state === 'PAUSED'}
       />
 
       {/* 2. Preparation Timer Display */}

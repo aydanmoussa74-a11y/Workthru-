@@ -282,7 +282,7 @@ export async function runProgressionTests(): Promise<{ passed: boolean; report: 
         workoutId: 'wk-2',
         workoutTitle: 'Push Training 2',
         workoutFocus: 'PUSH',
-        startedAt: 2000,
+        startedAt: 2000000,
         completedAt: 2600000,
         plannedDurationMs: 600000,
         actualDurationMs: 600000,
@@ -297,11 +297,11 @@ export async function runProgressionTests(): Promise<{ passed: boolean; report: 
             segmentIndex: 1,
             status: 'SKIPPED',
             actualDurationMs: 0,
-            startedAtTimestamp: 2000,
-            endedAtTimestamp: 2000,
+            startedAtTimestamp: 2000000,
+            endedAtTimestamp: 2000000,
           },
         ],
-        createdAt: 2000,
+        createdAt: 2000000,
       },
     ];
 

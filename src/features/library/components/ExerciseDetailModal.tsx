@@ -6,6 +6,7 @@ import { Badge } from '../../../ui/components/Badge';
 import { Button } from '../../../ui/components/Button';
 import { IconButton } from '../../../ui/components/IconButton';
 import { Card } from '../../../ui/components/Card';
+import { DemonstrationPanel } from '../../training/components/DemonstrationPanel';
 import {
   X,
   Dumbbell,
@@ -113,20 +114,13 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
-            {/* Structural Trainer / Movement Preview Slot */}
-            <div className="w-full aspect-video rounded-xl bg-neutral-950 border border-neutral-800/80 flex flex-col items-center justify-center p-4 text-center relative overflow-hidden">
-              <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-750 flex items-center justify-center text-neutral-400 mb-2">
-                <Activity className="w-5 h-5 text-neutral-300" />
-              </div>
-              <p className="text-xs font-semibold text-neutral-200">Movement Pattern: {exercise.movementPattern.replace(/_/g, ' ')}</p>
-              <p className="text-[11px] text-neutral-400 max-w-xs mt-0.5">
-                Visual demonstration loops and interactive 3D trainer will activate in Phase 7.
-              </p>
-              <div className="absolute top-2 right-2">
-                <Badge variant="outline" className="text-[9px] py-0 px-1.5 font-mono text-neutral-400">
-                  Preview Slot
-                </Badge>
-              </div>
+            {/* Movement Demonstration Panel (Phase 7 Multi-Source Carousel) */}
+            <div className="w-full">
+              <DemonstrationPanel
+                exerciseId={exercise.id}
+                exerciseName={exercise.name}
+                segmentType="LIBRARY_PREVIEW"
+              />
             </div>
 
             {/* Description & Target Muscles */}

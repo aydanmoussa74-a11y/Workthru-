@@ -9,6 +9,7 @@ import { runTrainingEngineTests } from './training-engine.test';
 import { runTrainingPlayerTests } from './training-player.test';
 import { runLocalPersistenceTests } from './local-persistence.test';
 import { runProgressionTests } from './progression.test';
+import { runDemonstrationTests } from './demonstrations.test';
 
 export async function runAllTests(): Promise<{ passed: boolean; report: string[] }> {
   const report: string[] = [];
@@ -83,6 +84,15 @@ export async function runAllTests(): Promise<{ passed: boolean; report: string[]
     report.push('✓ Phase 6 Progression Engine tests passed (rules v1, deterministic evaluator, evidence calculation, conservative regression, ladder discovery, preferences)');
   } else {
     report.push(`✗ Phase 6 Progression Engine tests failed:\n${progressionTestResult.report.filter(r => r.startsWith('✗')).join('\n')}`);
+    allPassed = false;
+  }
+
+  // 9. Phase 7 Demonstration & Trainer System tests
+  const demoTestResult = await runDemonstrationTests();
+  if (demoTestResult.passed) {
+    report.push('✓ Phase 7 Demonstration & Trainer System tests passed (multi-source Real Person + 3D, deterministic resolution, non-destructive switching, offline filtering, TrainingEngine state isolation)');
+  } else {
+    report.push(`✗ Phase 7 Demonstration & Trainer System tests failed:\n${demoTestResult.report.filter(r => r.startsWith('✗')).join('\n')}`);
     allPassed = false;
   }
 

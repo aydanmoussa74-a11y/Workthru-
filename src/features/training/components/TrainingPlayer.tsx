@@ -211,6 +211,7 @@ export const TrainingPlayer: React.FC<TrainingPlayerProps> = ({
             <ExerciseDemonstration
               segment={currentSegment}
               exerciseDetails={currentExerciseDetails}
+              isWorkoutPaused={isPaused}
             />
 
             {/* Central Precision Timing / Reps Display */}

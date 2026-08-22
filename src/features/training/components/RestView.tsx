@@ -21,12 +21,16 @@ export const RestView: React.FC<RestViewProps> = ({
   state,
   nextExerciseDetails,
 }) => {
+  // During rest, display upcoming exercise demonstration preview if next segment exists
+  const restVisualSegment = nextSegment || currentSegment;
+
   return (
     <div id="rest-view-stage" className="space-y-4">
-      {/* 1. Recovery Demonstration / Stage Frame */}
+      {/* 1. Recovery Demonstration / Upcoming Movement Stage Frame */}
       <ExerciseDemonstration
-        segment={currentSegment}
-        exerciseDetails={null}
+        segment={restVisualSegment}
+        exerciseDetails={nextExerciseDetails}
+        isWorkoutPaused={state === 'PAUSED'}
       />
 
       {/* 2. Recovery Timer Display */}
