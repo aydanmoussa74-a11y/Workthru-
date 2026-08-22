@@ -22,6 +22,7 @@ import {
 } from '../../data/repositories';
 import { PersistedCompletedWorkout, PersistedTrainingSession } from '../../data/local/types';
 import { CompletedWorkoutList } from './components/CompletedWorkoutList';
+import { ProgressionLaddersSection } from './components/ProgressionLaddersSection';
 import { DataManagementSection } from './components/DataManagementSection';
 import { SessionRecoveryBanner } from '../training/components/SessionRecoveryBanner';
 
@@ -34,6 +35,7 @@ export const ProgressScreen: React.FC = () => {
     ageMs: number;
   }>({ session: null, isStale: false, ageMs: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Diagnostics state
   const [testResults, setTestResults] = useState<{ passed: boolean; report: string[] } | null>(null);
@@ -65,26 +67,30 @@ export const ProgressScreen: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, refreshKey]);
 
   const handleDeleteWorkout = async (id: string) => {
     await defaultCompletedWorkoutRepository.deleteCompletedWorkout(id);
     await loadData();
+    setRefreshKey((k) => k + 1);
   };
 
   const handleClearHistory = async () => {
     await defaultCompletedWorkoutRepository.clearCompletedWorkouts();
     await loadData();
+    setRefreshKey((k) => k + 1);
   };
 
   const handleClearAllData = async () => {
     await clearAllLocalApplicationData();
     await loadData();
+    setRefreshKey((k) => k + 1);
   };
 
   const handleResetPreferences = async () => {
     await defaultPreferencesRepository.resetTrainingPreferences();
     await loadData();
+    setRefreshKey((k) => k + 1);
   };
 
   const handleResumeInterrupted = (session: PersistedTrainingSession) => {
@@ -112,19 +118,19 @@ export const ProgressScreen: React.FC = () => {
     <motion.div
       id="progress-screen"
       {...screenTransition}
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-6"
     >
       <section id="progress-header" className="space-y-1">
         <div className="flex items-center gap-2">
           <Badge variant="outline" id="progress-phase-tag">
-            Phase 5 • Local Persistence
+            Phase 6 • Progression Engine
           </Badge>
         </div>
         <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
-          Your Progress
+          Your Progress & Ladders
         </h2>
         <p className="text-sm text-neutral-400">
-          Tracking consistency, completed workouts, and local history safely on this device.
+          Deterministic movement ladders, completion history, and voluntary progression recommendations.
         </p>
       </section>
 
@@ -138,6 +144,12 @@ export const ProgressScreen: React.FC = () => {
           onDiscard={handleDiscardInterrupted}
         />
       )}
+
+      {/* Movement Progression Ladders Section */}
+      <ProgressionLaddersSection
+        key={`progression-section-${refreshKey}`}
+        onPreferencesChanged={() => setRefreshKey((k) => k + 1)}
+      />
 
       {/* Main Content: Workouts List or Honest Empty State */}
       {completedWorkouts.length > 0 ? (
@@ -184,9 +196,9 @@ export const ProgressScreen: React.FC = () => {
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               <div>
-                <p className="text-xs font-semibold text-neutral-200">Phase 0–5 Automated Tests</p>
+                <p className="text-xs font-semibold text-neutral-200">Phase 0–6 Automated Tests</p>
                 <p className="text-[10px] text-neutral-400 font-mono">
-                  IndexedDB, Repositories, Autosave, Recovery & State Engine
+                  Progression Engine, Movement Ladders, IndexedDB, Recovery & State Engine
                 </p>
               </div>
             </div>
@@ -214,7 +226,7 @@ export const ProgressScreen: React.FC = () => {
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>
                   {testResults.passed
-                    ? 'All Phase 0-5 Verification Tests Passing'
+                    ? 'All Phase 0-6 Verification Tests Passing'
                     : 'Test Failures Detected'}
                 </span>
               </div>

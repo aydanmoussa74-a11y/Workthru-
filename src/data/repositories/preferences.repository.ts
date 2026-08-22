@@ -135,6 +135,48 @@ export class IndexedDBPreferencesRepository implements PreferencesRepository {
   }
 }
 
+export class InMemoryPreferencesRepository implements PreferencesRepository {
+  private store = new Map<string, any>();
+
+  public async getTrainingPreferences(): Promise<UserTrainingPreferences> {
+    return this.store.get(TRAINING_PREFS_KEY) || { ...DEFAULT_USER_TRAINING_PREFERENCES };
+  }
+
+  public async saveTrainingPreferences(
+    prefs: Partial<UserTrainingPreferences>
+  ): Promise<UserTrainingPreferences> {
+    const current = await this.getTrainingPreferences();
+    const updated = { ...current, ...prefs };
+    this.store.set(TRAINING_PREFS_KEY, updated);
+    return updated;
+  }
+
+  public async resetTrainingPreferences(): Promise<UserTrainingPreferences> {
+    const reset = { ...DEFAULT_USER_TRAINING_PREFERENCES };
+    this.store.set(TRAINING_PREFS_KEY, reset);
+    return reset;
+  }
+
+  public async getPreference<T>(key: string, defaultValue: T): Promise<T> {
+    if (this.store.has(key)) {
+      return this.store.get(key) as T;
+    }
+    return defaultValue;
+  }
+
+  public async setPreference<T>(key: string, value: T): Promise<void> {
+    this.store.set(key, value);
+  }
+
+  public async deletePreference(key: string): Promise<void> {
+    this.store.delete(key);
+  }
+
+  public async clearAllPreferences(): Promise<void> {
+    this.store.clear();
+  }
+}
+
 /**
  * Singleton instance of PreferencesRepository.
  */

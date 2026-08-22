@@ -53,6 +53,7 @@ export interface WorkoutConstraints {
   includeWarmup: boolean;
   includeCooldown: boolean;
   exerciseLimit?: number;
+  preferredVariations?: Record<string, string>;
 }
 
 export interface WorkoutRequest {
@@ -65,6 +66,7 @@ export interface WorkoutRequest {
   includeCooldown?: boolean;
   preferredIntensity?: 'LOW' | 'MODERATE' | 'HIGH';
   exerciseLimit?: number;
+  preferredVariations?: Record<string, string>;
   seed?: string | number;
 }
 

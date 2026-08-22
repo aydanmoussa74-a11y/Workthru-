@@ -344,7 +344,27 @@ export class WorkoutGenerator {
     budgetSec: number,
     constraints: WorkoutConstraints
   ): void {
-    const mainCandidates = this.selectMainCandidates(pool, constraints.focus, constraints.experienceLevel);
+    let mainCandidates = this.selectMainCandidates(pool, constraints.focus, constraints.experienceLevel);
+
+    // Apply explicit user progression preferences if provided
+    if (constraints.preferredVariations && Object.keys(constraints.preferredVariations).length > 0) {
+      const prefs = constraints.preferredVariations;
+      mainCandidates = mainCandidates.map((candidate) => {
+        const preferredId = prefs[candidate.id] || Object.entries(prefs).find(([_, targetId]) => {
+          // If preference key maps to candidate or candidate matches a family
+          return targetId === candidate.id;
+        })?.[1];
+
+        const explicitTargetId = prefs[candidate.id];
+        if (explicitTargetId) {
+          const matchingPoolEx = pool.find((p) => p.id === explicitTargetId);
+          if (matchingPoolEx) {
+            return matchingPoolEx;
+          }
+        }
+        return candidate;
+      });
+    }
 
     if (mainCandidates.length === 0) return;
 

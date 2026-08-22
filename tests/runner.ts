@@ -8,6 +8,7 @@ import { runWorkoutDomainTests } from './workout-domain.test';
 import { runTrainingEngineTests } from './training-engine.test';
 import { runTrainingPlayerTests } from './training-player.test';
 import { runLocalPersistenceTests } from './local-persistence.test';
+import { runProgressionTests } from './progression.test';
 
 export async function runAllTests(): Promise<{ passed: boolean; report: string[] }> {
   const report: string[] = [];
@@ -73,6 +74,15 @@ export async function runAllTests(): Promise<{ passed: boolean; report: string[]
     report.push('✓ Phase 5 Local Persistence & IndexedDB tests passed (schema v1, session snapshots, interruption recovery, stale threshold, completed history, preferences, wipe)');
   } else {
     report.push(`✗ Phase 5 Local Persistence & IndexedDB tests failed:\n${persistenceTestResult.failures.join('\n')}`);
+    allPassed = false;
+  }
+
+  // 8. Phase 6 Progression engine tests
+  const progressionTestResult = await runProgressionTests();
+  if (progressionTestResult.passed) {
+    report.push('✓ Phase 6 Progression Engine tests passed (rules v1, deterministic evaluator, evidence calculation, conservative regression, ladder discovery, preferences)');
+  } else {
+    report.push(`✗ Phase 6 Progression Engine tests failed:\n${progressionTestResult.report.filter(r => r.startsWith('✗')).join('\n')}`);
     allPassed = false;
   }
 
