@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApp } from '../providers/AppProvider';
 import { APP_ROUTES } from '../routes';
-import { Home, Flame, TrendingUp, BookOpen } from '../../ui/icons';
+import { Home, Flame, TrendingUp, BookOpen, Video } from '../../ui/icons';
 import { classNames } from '../../lib/utils';
 import { AppDestination } from '../../types';
 
@@ -10,6 +10,7 @@ const iconMap = {
   Flame,
   TrendingUp,
   BookOpen,
+  Video,
 };
 
 export const BottomNav: React.FC = () => {

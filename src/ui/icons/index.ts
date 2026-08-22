@@ -49,4 +49,9 @@ export {
   Lightbulb,
   Trash2,
   HardDrive,
+  Video,
+  Music,
+  WifiOff,
+  ExternalLink,
+  RefreshCw,
 } from 'lucide-react';

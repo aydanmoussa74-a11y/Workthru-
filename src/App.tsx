@@ -10,6 +10,7 @@ import { HomeScreen } from './features/home/HomeScreen';
 import { TrainingScreen } from './features/training/TrainingScreen';
 import { ProgressScreen } from './features/progress/ProgressScreen';
 import { LibraryScreen } from './features/library/LibraryScreen';
+import { MediaSearchScreen } from './features/media/MediaSearchScreen';
 
 const MainRouter: React.FC = () => {
   const { currentDestination } = useApp();
@@ -20,6 +21,7 @@ const MainRouter: React.FC = () => {
       {currentDestination === 'train' && <TrainingScreen />}
       {currentDestination === 'progress' && <ProgressScreen />}
       {currentDestination === 'library' && <LibraryScreen />}
+      {currentDestination === 'media' && <MediaSearchScreen />}
     </AppShell>
   );
 };

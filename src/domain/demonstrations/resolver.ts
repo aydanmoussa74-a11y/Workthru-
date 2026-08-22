@@ -158,6 +158,8 @@ export function formatDemonstrationSourceLabel(sourceType: DemonstrationSourceTy
       return 'Real Person';
     case 'THREE_D_TRAINER':
       return '3D Trainer';
+    case 'YOUTUBE_VIDEO':
+      return 'YouTube';
     case 'FUTURE_AI_GENERATED':
       return 'AI Generated';
     case 'FUTURE_EXTERNAL_VIDEO':

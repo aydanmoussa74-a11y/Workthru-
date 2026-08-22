@@ -75,6 +75,23 @@ export const INITIAL_DEMONSTRATION_ASSETS: DemonstrationAsset[] = [
       resolution: 'Real-time 3D Wireframe/Rig',
     },
   },
+  {
+    id: 'demo-push-standard-youtube',
+    exerciseId: 'push-standard-pushup',
+    sourceType: 'YOUTUBE_VIDEO',
+    title: 'Standard Push-Up • YouTube Form Guide',
+    description: 'Calisthenicmovement in-depth breakdown of push-up mechanics and shoulder packing.',
+    mediaUrl: 'https://www.youtube.com/embed/IODxDxX7oi4',
+    posterUrl: 'https://i.ytimg.com/vi/IODxDxX7oi4/hqdefault.jpg',
+    durationSec: 378,
+    loop: false,
+    availableOffline: false,
+    attribution: 'Calisthenicmovement (YouTube)',
+    youtubeVideoId: 'IODxDxX7oi4',
+    metadata: {
+      focalCues: ['Shoulder blade depression', 'Tuck elbows 45°', 'Full lock at top'],
+    },
+  },
 
   // ==================== WALL PUSH-UP ====================
   {
@@ -209,6 +226,23 @@ export const INITIAL_DEMONSTRATION_ASSETS: DemonstrationAsset[] = [
       focalCues: ['Parallel hip crease depth', 'Torso angle parallel to shins', 'Active arch tension'],
     },
   },
+  {
+    id: 'demo-legs-squat-youtube',
+    exerciseId: 'legs-bodyweight-squat',
+    sourceType: 'YOUTUBE_VIDEO',
+    title: 'Bodyweight Squat • YouTube Form Guide',
+    description: 'Calisthenicmovement deep dive into hip mechanics, knee tracking, and foot pressure.',
+    mediaUrl: 'https://www.youtube.com/embed/aclHkVaku9U',
+    posterUrl: 'https://i.ytimg.com/vi/aclHkVaku9U/hqdefault.jpg',
+    durationSec: 425,
+    loop: false,
+    availableOffline: false,
+    attribution: 'Calisthenicmovement (YouTube)',
+    youtubeVideoId: 'aclHkVaku9U',
+    metadata: {
+      focalCues: ['Hips back and down', 'Knees track over toes', 'Flat foot pressure'],
+    },
+  },
 
   // ==================== GLUTE BRIDGE ====================
   {
@@ -281,6 +315,23 @@ export const INITIAL_DEMONSTRATION_ASSETS: DemonstrationAsset[] = [
     metadata: {
       angles: ['SIDE', 'TOP'],
       focalCues: ['Zero pelvic anterior tilt', 'Active floor push through forearms'],
+    },
+  },
+  {
+    id: 'demo-core-plank-youtube',
+    exerciseId: 'core-plank',
+    sourceType: 'YOUTUBE_VIDEO',
+    title: 'Forearm Plank • YouTube Form Guide',
+    description: 'Calisthenicmovement masterclass on hollow body bracing and preventing lower back strain.',
+    mediaUrl: 'https://www.youtube.com/embed/ASdvN_XEl_c',
+    posterUrl: 'https://i.ytimg.com/vi/ASdvN_XEl_c/hqdefault.jpg',
+    durationSec: 390,
+    loop: false,
+    availableOffline: false,
+    attribution: 'Calisthenicmovement (YouTube)',
+    youtubeVideoId: 'ASdvN_XEl_c',
+    metadata: {
+      focalCues: ['Posterior pelvic tilt', 'Elbows under shoulders', 'Active neck neutral'],
     },
   },
 

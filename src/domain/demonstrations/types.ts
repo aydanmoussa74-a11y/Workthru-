@@ -6,6 +6,7 @@
 export type DemonstrationSourceType =
   | 'REAL_PERSON'
   | 'THREE_D_TRAINER'
+  | 'YOUTUBE_VIDEO'
   | 'FUTURE_AI_GENERATED'
   | 'FUTURE_EXTERNAL_VIDEO';
 
@@ -13,7 +14,9 @@ export type DemonstrationAvailabilityState =
   | 'AVAILABLE'
   | 'UNAVAILABLE'
   | 'LOADING'
-  | 'ERROR';
+  | 'ERROR'
+  | 'BLOCKED'
+  | 'OFFLINE';
 
 export interface DemonstrationMetadata {
   angles?: ('FRONT' | 'SIDE' | 'ANGLED' | 'TOP')[];
@@ -49,6 +52,8 @@ export interface DemonstrationAsset {
   availableOffline: boolean;
   /** Source attribution or author credit */
   attribution?: string;
+  /** Optional YouTube Video ID if source is YOUTUBE_VIDEO */
+  youtubeVideoId?: string;
   /** Additional domain metadata */
   metadata?: DemonstrationMetadata;
 }

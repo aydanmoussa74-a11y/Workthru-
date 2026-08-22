@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DemonstrationAsset } from '../../../domain/demonstrations/types';
 import { Activity, Dumbbell, Sparkles, Layers, ShieldCheck, Eye } from '../../../ui/icons';
+import { YouTubePlayer } from '../../media/components/YouTubePlayer';
 
 export interface DemonstrationVisualizerProps {
   asset: DemonstrationAsset;
@@ -11,10 +12,10 @@ export interface DemonstrationVisualizerProps {
 
 /**
  * DemonstrationVisualizer
- * High-performance vector motion visualizer for Phase 7.
- * Generates smooth kinematic vector movement loops for Real Person athletic demonstrations
- * and 3D biomechanical wireframe/musculoskeletal tension models.
- * Operates 100% offline with zero external network dependencies or heavy bundle costs.
+ * High-performance movement visualizer supporting:
+ * - Real Person athletic vector motion
+ * - 3D biomechanical wireframe tension model
+ * - YouTube embedded demonstration video (Phase 8)
  */
 export const DemonstrationVisualizer: React.FC<DemonstrationVisualizerProps> = ({
   asset,
@@ -22,6 +23,24 @@ export const DemonstrationVisualizer: React.FC<DemonstrationVisualizerProps> = (
   activeAngle = 'SIDE',
   className = '',
 }) => {
+  // If YouTube source, render official embedded YouTube Player
+  if (asset.sourceType === 'YOUTUBE_VIDEO') {
+    const videoId =
+      asset.youtubeVideoId ||
+      (asset.mediaUrl?.includes('embed/') ? asset.mediaUrl.split('embed/')[1] : 'IODxDxX7oi4');
+
+    return (
+      <div id={`demo-visualizer-${asset.id}`} className={`w-full h-full ${className}`}>
+        <YouTubePlayer
+          videoId={videoId}
+          title={asset.title}
+          autoPlay={false}
+          className="w-full h-full rounded-none border-0"
+        />
+      </div>
+    );
+  }
+
   const is3D = asset.sourceType === 'THREE_D_TRAINER';
   const focalCues = asset.metadata?.focalCues || [];
   const tempo = asset.metadata?.tempo || 'Controlled 2-1-2';

@@ -45,6 +45,8 @@ function getSourceIcon(sourceType?: DemonstrationSourceType) {
       return <User className="w-3.5 h-3.5 text-emerald-400" />;
     case 'THREE_D_TRAINER':
       return <Box className="w-3.5 h-3.5 text-blue-400" />;
+    case 'YOUTUBE_VIDEO':
+      return <Video className="w-3.5 h-3.5 text-red-400" />;
     case 'FUTURE_AI_GENERATED':
       return <Sparkles className="w-3.5 h-3.5 text-amber-400" />;
     case 'FUTURE_EXTERNAL_VIDEO':

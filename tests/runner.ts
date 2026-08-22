@@ -10,6 +10,7 @@ import { runTrainingPlayerTests } from './training-player.test';
 import { runLocalPersistenceTests } from './local-persistence.test';
 import { runProgressionTests } from './progression.test';
 import { runDemonstrationTests } from './demonstrations.test';
+import { runYouTubeDomainTests } from '../src/domain/media/youtube/__tests__/youtube.test';
 
 export async function runAllTests(): Promise<{ passed: boolean; report: string[] }> {
   const report: string[] = [];
@@ -93,6 +94,15 @@ export async function runAllTests(): Promise<{ passed: boolean; report: string[]
     report.push('✓ Phase 7 Demonstration & Trainer System tests passed (multi-source Real Person + 3D, deterministic resolution, non-destructive switching, offline filtering, TrainingEngine state isolation)');
   } else {
     report.push(`✗ Phase 7 Demonstration & Trainer System tests failed:\n${demoTestResult.report.filter(r => r.startsWith('✗')).join('\n')}`);
+    allPassed = false;
+  }
+
+  // 10. Phase 8 YouTube & Media System tests
+  const youtubeTestResult = await runYouTubeDomainTests();
+  if (youtubeTestResult.failed === 0) {
+    report.push(`✓ Phase 8 YouTube & Media System tests passed (${youtubeTestResult.passed} checks: query builder, TTL LRU cache, normalizer, error fallback, demonstration integration)`);
+  } else {
+    report.push(`✗ Phase 8 YouTube & Media System tests failed:\n${youtubeTestResult.errors.join('\n')}`);
     allPassed = false;
   }
 

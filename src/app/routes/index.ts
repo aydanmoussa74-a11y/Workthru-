@@ -29,4 +29,11 @@ export const APP_ROUTES: RouteMeta[] = [
     iconName: 'BookOpen',
     description: 'Movement techniques and variations',
   },
+  {
+    id: 'media',
+    label: 'Media',
+    shortLabel: 'Media',
+    iconName: 'Video',
+    description: 'YouTube form videos, follow-along workouts, and music',
+  },
 ];

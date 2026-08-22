@@ -186,6 +186,41 @@ export const HomeScreen: React.FC = () => {
         </Card>
       </section>
 
+      {/* Workout Media & Follow-Along Discovery (Phase 8) */}
+      <section id="home-media-hub-section" className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-mono uppercase tracking-wider text-neutral-400">
+            Workout Media Hub
+          </h3>
+          <button
+            type="button"
+            onClick={() => navigateTo('media')}
+            className="text-[11px] font-mono text-emerald-400 hover:underline cursor-pointer"
+          >
+            Explore Media →
+          </button>
+        </div>
+        <Card
+          id="home-media-hub-card"
+          padding="sm"
+          className="bg-neutral-900/40 hover:bg-neutral-850/60 border-neutral-800 transition-colors cursor-pointer"
+          onClick={() => navigateTo('media')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-neutral-950 border border-neutral-800 flex items-center justify-center text-red-400">
+                <Play className="w-3.5 h-3.5 fill-current" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-xs font-semibold text-neutral-200">Movement Form & Follow-Along</p>
+                <p className="text-[11px] text-neutral-400">Watch embedded YouTube demonstrations and routines</p>
+              </div>
+            </div>
+            <span className="text-[11px] font-mono text-neutral-400">Watch</span>
+          </div>
+        </Card>
+      </section>
+
       {/* Core Principles Architecture Card */}
       <section id="core-principles-section" className="space-y-2">
         <h3 className="text-xs font-mono uppercase tracking-wider text-neutral-400">
