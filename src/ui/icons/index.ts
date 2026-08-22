@@ -54,4 +54,8 @@ export {
   WifiOff,
   ExternalLink,
   RefreshCw,
+  Volume2,
+  VolumeX,
+  MessageSquare,
+  Send,
 } from 'lucide-react';

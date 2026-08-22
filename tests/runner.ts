@@ -11,6 +11,7 @@ import { runLocalPersistenceTests } from './local-persistence.test';
 import { runProgressionTests } from './progression.test';
 import { runDemonstrationTests } from './demonstrations.test';
 import { runYouTubeDomainTests } from '../src/domain/media/youtube/__tests__/youtube.test';
+import { runCoachingTests } from './coaching.test';
 
 export async function runAllTests(): Promise<{ passed: boolean; report: string[] }> {
   const report: string[] = [];
@@ -103,6 +104,15 @@ export async function runAllTests(): Promise<{ passed: boolean; report: string[]
     report.push(`✓ Phase 8 YouTube & Media System tests passed (${youtubeTestResult.passed} checks: query builder, TTL LRU cache, normalizer, error fallback, demonstration integration)`);
   } else {
     report.push(`✗ Phase 8 YouTube & Media System tests failed:\n${youtubeTestResult.errors.join('\n')}`);
+    allPassed = false;
+  }
+
+  // 11. Phase 9 AI Coach System tests
+  const coachTestResult = await runCoachingTests();
+  if (coachTestResult.passed) {
+    report.push('✓ Phase 9 AI Coach System tests passed (safety guardrails, context builder, local deterministic coach, autonomy modes, remote fallback, voice boundary, TrainingEngine isolation)');
+  } else {
+    report.push(`✗ Phase 9 AI Coach System tests failed:\n${coachTestResult.failures.join('\n')}`);
     allPassed = false;
   }
 

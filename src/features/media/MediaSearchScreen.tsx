@@ -93,9 +93,19 @@ export const MediaSearchScreen: React.FC<MediaSearchScreenProps> = ({
         });
 
         if (isLoadMore) {
-          setResults((prev) => [...prev, ...response.items]);
+          setResults((prev) => {
+            const seen = new Set(prev.map((p) => p.videoId));
+            const newUnique = response.items.filter((item) => !seen.has(item.videoId));
+            return [...prev, ...newUnique];
+          });
         } else {
-          setResults(response.items);
+          const seen = new Set<string>();
+          const uniqueItems = response.items.filter((item) => {
+            if (seen.has(item.videoId)) return false;
+            seen.add(item.videoId);
+            return true;
+          });
+          setResults(uniqueItems);
         }
         setNextPageToken(response.nextPageToken);
       } catch (err) {
@@ -259,9 +269,9 @@ export const MediaSearchScreen: React.FC<MediaSearchScreenProps> = ({
         {/* Results List */}
         {results.length > 0 && (
           <div id="media-results-list" className="grid grid-cols-1 gap-2.5">
-            {results.map((video) => (
+            {results.map((video, idx) => (
               <MediaResultCard
-                key={video.videoId}
+                key={`${video.videoId}-${idx}`}
                 video={video}
                 onSelect={(v) => setSelectedVideo(v)}
               />

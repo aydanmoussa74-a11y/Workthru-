@@ -397,9 +397,16 @@ export class DefaultYouTubeService implements YouTubeService {
 
       const data = await res.json();
       const rawItems = Array.isArray(data.items) ? data.items : [];
-      const normalizedItems: YouTubeVideo[] = rawItems
-        .map((item: any) => normalizeYouTubeItem(item, category, request.exerciseId))
-        .filter((v: YouTubeVideo | null): v is YouTubeVideo => v !== null);
+      const seenVideoIds = new Set<string>();
+      const normalizedItems: YouTubeVideo[] = [];
+
+      for (const item of rawItems) {
+        const normalized = normalizeYouTubeItem(item, category, request.exerciseId);
+        if (normalized && !seenVideoIds.has(normalized.videoId)) {
+          seenVideoIds.add(normalized.videoId);
+          normalizedItems.push(normalized);
+        }
+      }
 
       const searchResponse: YouTubeSearchResponse = {
         items: normalizedItems,

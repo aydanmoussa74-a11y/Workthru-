@@ -14,12 +14,19 @@ import { WorkoutComplete } from './WorkoutComplete';
 import { AbandonConfirmModal } from './AbandonConfirmModal';
 import { X, AlertCircle } from '../../../ui/icons';
 import { TrainingStateSnapshot } from '../../../domain/training-state/types';
+import { defaultCoachService } from '../../../domain/ai/service';
+import { VoiceService, defaultVoiceService } from '../../../domain/ai/voice';
+import { CoachMessage, CoachMode, CoachEvent, CoachService } from '../../../domain/ai/types';
+import { buildCoachContext } from '../../../domain/ai/contextBuilder';
+import { CoachPanel } from '../../coach/CoachPanel';
 
 export interface TrainingPlayerProps {
   workout: Workout;
   initialSnapshot?: TrainingStateSnapshot;
   exerciseRepo?: ExerciseRepository;
   clock?: Clock;
+  coachService?: CoachService;
+  voiceService?: VoiceService;
   autoStart?: boolean;
   onExit: () => void;
   onSessionComplete?: () => void;
@@ -30,12 +37,19 @@ export const TrainingPlayer: React.FC<TrainingPlayerProps> = ({
   initialSnapshot,
   exerciseRepo = defaultExerciseRepository,
   clock = defaultClock,
+  coachService = defaultCoachService,
+  voiceService = defaultVoiceService,
   autoStart = true,
   onExit,
   onSessionComplete,
 }) => {
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const [allExercisesMap, setAllExercisesMap] = useState<Map<string, any>>(new Map());
+  const [currentCoachMessage, setCurrentCoachMessage] = useState<CoachMessage | null>(null);
+  const [coachMessagesHistory, setCoachMessagesHistory] = useState<CoachMessage[]>([]);
+  const [isCoachLoading, setIsCoachLoading] = useState(false);
+  const [coachMode, setCoachMode] = useState<CoachMode>(coachService.getMode());
+  const [coachEnabled, setCoachEnabled] = useState<boolean>(coachService.isEnabled());
 
   // Authoritative Training Engine Hook with Snapshot Restoration support
   const {
@@ -101,8 +115,92 @@ export const TrainingPlayer: React.FC<TrainingPlayerProps> = ({
     ? allExercisesMap.get(nextSegment.exerciseId) || null
     : null;
 
+  // Build reactive Coach Context
+  const coachContext = useMemo(() => {
+    return buildCoachContext({
+      workout,
+      session,
+      currentSegment,
+      currentExercise: currentExerciseDetails,
+      remainingTimeSec: timing.remainingSec,
+      recentMessages: coachMessagesHistory,
+    });
+  }, [workout, session, currentSegment, currentExerciseDetails, timing.remainingSec, coachMessagesHistory]);
+
+  // Handle Coach Event Dispatch
+  const emitCoachEvent = async (event: CoachEvent, extraPrompt?: string) => {
+    if (!coachService.isEnabled()) return;
+    setIsCoachLoading(true);
+    try {
+      const response = await coachService.handleEvent(event, coachContext, extraPrompt);
+      if (response && response.message) {
+        setCurrentCoachMessage(response.message);
+        setCoachMessagesHistory((prev) => [...prev.slice(-4), response.message]);
+        if (voiceService?.isEnabled()) {
+          voiceService.speak(response.message.content);
+        }
+      }
+    } catch {
+      // Coach failures never disrupt training engine
+    } finally {
+      setIsCoachLoading(false);
+    }
+  };
+
+  // Trigger Coach cues on meaningful segment state transitions (never on timer ticks)
+  useEffect(() => {
+    if (!currentSegment || !isActive) return;
+
+    if (state === 'PREPARING') {
+      emitCoachEvent('WORKOUT_STARTED');
+    } else if (state === 'ACTIVE') {
+      emitCoachEvent('EXERCISE_STARTED');
+    } else if (state === 'REST') {
+      emitCoachEvent('REST_STARTED');
+    }
+  }, [currentSegment?.segmentIndex, state]);
+
+  // Handle direct questions to the coach
+  const handleAskQuestion = async (question: string) => {
+    setIsCoachLoading(true);
+    try {
+      const response = await coachService.askQuestion(question, coachContext);
+      if (response && response.message) {
+        setCurrentCoachMessage(response.message);
+        setCoachMessagesHistory((prev) => [...prev.slice(-4), response.message]);
+        if (voiceService?.isEnabled()) {
+          voiceService.speak(response.message.content);
+        }
+      }
+    } catch {
+      // Ignored safely
+    } finally {
+      setIsCoachLoading(false);
+    }
+  };
+
+  const handleModeChange = (mode: CoachMode) => {
+    coachService.setMode(mode);
+    setCoachMode(mode);
+  };
+
+  const handleToggleEnabled = (enabled: boolean) => {
+    coachService.setEnabled(enabled);
+    setCoachEnabled(enabled);
+    if (!enabled) {
+      setCurrentCoachMessage(null);
+      if (voiceService) voiceService.stop();
+    }
+  };
+
+  const handleDismissMessage = () => {
+    setCurrentCoachMessage(null);
+    if (voiceService) voiceService.stop();
+  };
+
   // Handle Quit Request
   const handleExitRequest = () => {
+    if (voiceService) voiceService.stop();
     if (isComplete || isAbandoned || state === 'NOT_STARTED') {
       onExit();
     } else {
@@ -111,6 +209,7 @@ export const TrainingPlayer: React.FC<TrainingPlayerProps> = ({
   };
 
   const handleConfirmAbandon = () => {
+    if (voiceService) voiceService.stop();
     setShowAbandonModal(false);
     abandon();
     onExit();
@@ -186,23 +285,49 @@ export const TrainingPlayer: React.FC<TrainingPlayerProps> = ({
       {/* 3. Core Stage Area (Routed dynamically by engine segment state) */}
       <main id="player-stage-main" className="flex-1 flex flex-col justify-center py-3 space-y-4">
         {state === 'PREPARING' && currentSegment && (
-          <PreparationView
-            currentSegment={currentSegment}
-            nextSegment={nextSegment}
-            timing={timing}
-            state={state}
-            nextExerciseDetails={nextExerciseDetails}
-          />
+          <div className="space-y-3.5">
+            <PreparationView
+              currentSegment={currentSegment}
+              nextSegment={nextSegment}
+              timing={timing}
+              state={state}
+              nextExerciseDetails={nextExerciseDetails}
+            />
+            <CoachPanel
+              coachService={coachService}
+              voiceService={voiceService}
+              context={coachContext}
+              currentMessage={currentCoachMessage}
+              onDismissMessage={handleDismissMessage}
+              onAskQuestion={handleAskQuestion}
+              onModeChange={handleModeChange}
+              onToggleEnabled={handleToggleEnabled}
+              isLoading={isCoachLoading}
+            />
+          </div>
         )}
 
         {state === 'REST' && currentSegment && (
-          <RestView
-            currentSegment={currentSegment}
-            nextSegment={nextSegment}
-            timing={timing}
-            state={state}
-            nextExerciseDetails={nextExerciseDetails}
-          />
+          <div className="space-y-3.5">
+            <RestView
+              currentSegment={currentSegment}
+              nextSegment={nextSegment}
+              timing={timing}
+              state={state}
+              nextExerciseDetails={nextExerciseDetails}
+            />
+            <CoachPanel
+              coachService={coachService}
+              voiceService={voiceService}
+              context={coachContext}
+              currentMessage={currentCoachMessage}
+              onDismissMessage={handleDismissMessage}
+              onAskQuestion={handleAskQuestion}
+              onModeChange={handleModeChange}
+              onToggleEnabled={handleToggleEnabled}
+              isLoading={isCoachLoading}
+            />
+          </div>
         )}
 
         {(state === 'ACTIVE' || state === 'PAUSED') && currentSegment && (
@@ -225,6 +350,19 @@ export const TrainingPlayer: React.FC<TrainingPlayerProps> = ({
             <ExerciseGuidance
               segment={currentSegment}
               exerciseDetails={currentExerciseDetails}
+            />
+
+            {/* AI Coaching Advisory Panel */}
+            <CoachPanel
+              coachService={coachService}
+              voiceService={voiceService}
+              context={coachContext}
+              currentMessage={currentCoachMessage}
+              onDismissMessage={handleDismissMessage}
+              onAskQuestion={handleAskQuestion}
+              onModeChange={handleModeChange}
+              onToggleEnabled={handleToggleEnabled}
+              isLoading={isCoachLoading}
             />
           </div>
         )}

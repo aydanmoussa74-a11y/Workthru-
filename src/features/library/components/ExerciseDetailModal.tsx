@@ -128,17 +128,17 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
               <p className="text-sm text-neutral-300 leading-relaxed">{exercise.description}</p>
 
               <div className="flex flex-wrap gap-1.5 pt-1">
-                {exercise.primaryMuscles.map((m) => (
+                {exercise.primaryMuscles.map((m, idx) => (
                   <span
-                    key={m}
+                    key={`pri-${m}-${idx}`}
                     className="text-xs font-mono bg-neutral-800 text-neutral-200 px-2 py-0.5 rounded border border-neutral-700 capitalize"
                   >
                     Primary: {m.replace('_', ' ')}
                   </span>
                 ))}
-                {exercise.secondaryMuscles.map((m) => (
+                {exercise.secondaryMuscles.map((m, idx) => (
                   <span
-                    key={m}
+                    key={`sec-${m}-${idx}`}
                     className="text-xs font-mono bg-neutral-950 text-neutral-400 px-2 py-0.5 rounded border border-neutral-850 capitalize"
                   >
                     Secondary: {m.replace('_', ' ')}

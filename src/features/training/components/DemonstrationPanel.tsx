@@ -226,7 +226,7 @@ export const DemonstrationPanel: React.FC<DemonstrationPanelProps> = ({
               const isSelected = idx === resolution.selectedIndex;
               return (
                 <button
-                  key={asset.id}
+                  key={`${asset.id}-${idx}`}
                   type="button"
                   role="tab"
                   id={`demo-dot-${idx}`}

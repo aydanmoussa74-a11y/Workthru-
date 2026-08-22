@@ -68,9 +68,9 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({ exercise, onSelect }
 
       <div className="flex items-center justify-between pt-1 border-t border-neutral-850/60 mt-0.5">
         <div className="flex items-center gap-1.5 overflow-hidden">
-          {exercise.primaryMuscles.slice(0, 2).map((m) => (
+          {exercise.primaryMuscles.slice(0, 2).map((m, idx) => (
             <span
-              key={m}
+              key={`${m}-${idx}`}
               className="text-[10px] text-neutral-400 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-850 capitalize whitespace-nowrap"
             >
               {m.replace('_', ' ')}

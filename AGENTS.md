@@ -21,3 +21,9 @@
 
 ## 4. Phase Discipline
 - Implement strictly one phase at a time without jumping ahead or creating fake backend stubs.
+
+## 5. AI Coach Invariants (Phase 9)
+- **TrainingEngine is Authoritative; AI Coach is Advisory**: The AI Coach must NEVER directly control timers, segment transitions, workout state, exercise order, completion state, persistence, or progression decisions. AI output provides technique cues, pacing, explanations, and encouragement. The user and TrainingEngine remain in full control.
+- **No Periodic Tick AI Triggers**: AI evaluations must only trigger on discrete domain events or direct user inquiries, never on repetitive timer ticks.
+- **Safety Over Extravagance**: Strict refusal of injury diagnosis, medical prescriptions, extreme punishment encouragement, and aesthetic body comparisons. Stop and rest immediately on reported pain.
+
